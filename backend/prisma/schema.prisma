@@ -1,0 +1,343 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==============================
+// ENUMS
+// ==============================
+
+enum UserRole {
+  ADMIN
+  DOCTOR
+  RECEPTIONIST
+  NURSE
+  PATIENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentType {
+  CONSULTATION
+  FOLLOW_UP
+  EMERGENCY
+  CHECKUP
+}
+
+enum RecordType {
+  CONSULTATION
+  DIAGNOSIS
+  LAB_REPORT
+  IMAGING
+  PROCEDURE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  INSURANCE
+  ONLINE
+}
+
+// ==============================
+// USER
+// ==============================
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String?
+  phone        String?
+  role         UserRole @default(PATIENT)
+  isActive     Boolean  @default(true)
+
+  doctor       Doctor?
+  patient      Patient?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+// ==============================
+// DEPARTMENT
+// ==============================
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  location    String?
+
+  doctors     Doctor[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==============================
+// DOCTOR
+// ==============================
+
+model Doctor {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  departmentId   Int
+
+  specialization String
+  licenseNumber  String   @unique
+  experienceYears Int     @default(0)
+  consultationFee Decimal  @db.Decimal(10, 2)
+
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department     Department @relation(fields: [departmentId], references: [id])
+
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
+  prescriptions  Prescription[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([departmentId])
+}
+
+// ==============================
+// PATIENT
+// ==============================
+
+model Patient {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+
+  dateOfBirth     DateTime
+  gender          Gender
+  bloodGroup      String?
+  address         String?
+  emergencyContact String?
+  emergencyPhone   String?
+  allergies        String?
+  medicalHistory   String?
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  appointments    Appointment[]
+  medicalRecords  MedicalRecord[]
+  prescriptions   Prescription[]
+  invoices        Invoice[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ==============================
+// APPOINTMENT
+// ==============================
+
+model Appointment {
+  id          Int               @id @default(autoincrement())
+  patientId   Int
+  doctorId    Int
+
+  appointmentDate DateTime
+  type            AppointmentType @default(CONSULTATION)
+  status          AppointmentStatus @default(SCHEDULED)
+
+  reason          String?
+  notes           String?
+
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor          Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  medicalRecord   MedicalRecord?
+  invoice         Invoice?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([appointmentDate])
+  @@index([status])
+}
+
+// ==============================
+// MEDICAL RECORD
+// ==============================
+
+model MedicalRecord {
+  id             Int        @id @default(autoincrement())
+
+  patientId      Int
+  doctorId       Int
+  appointmentId  Int?       @unique
+
+  recordType     RecordType @default(CONSULTATION)
+
+  diagnosis      String?
+  symptoms       String?
+  treatment      String?
+  notes          String?
+
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor         Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([recordType])
+}
+
+// ==============================
+// MEDICATION
+// ==============================
+
+model Medication {
+  id              Int      @id @default(autoincrement())
+  name            String
+  genericName     String?
+  manufacturer    String?
+  description     String?
+
+  prescriptionItems PrescriptionItem[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([name])
+}
+
+// ==============================
+// PRESCRIPTION
+// ==============================
+
+model Prescription {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  doctorId    Int
+
+  diagnosis   String?
+  instructions String?
+
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor      Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  items       PrescriptionItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+// ==============================
+// PRESCRIPTION ITEM
+// ==============================
+
+model PrescriptionItem {
+  id             Int      @id @default(autoincrement())
+  prescriptionId Int
+  medicationId   Int
+
+  dosage         String
+  frequency      String
+  duration       String
+  instructions   String?
+
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  medication     Medication   @relation(fields: [medicationId], references: [id])
+
+  createdAt      DateTime @default(now())
+
+  @@index([prescriptionId])
+  @@index([medicationId])
+}
+
+// ==============================
+// INVOICE / BILLING
+// ==============================
+
+model Invoice {
+  id              Int           @id @default(autoincrement())
+  patientId       Int
+  appointmentId   Int?          @unique
+
+  invoiceNumber   String        @unique
+
+  consultationFee Decimal       @default(0) @db.Decimal(10, 2)
+  medicationFee   Decimal       @default(0) @db.Decimal(10, 2)
+  labFee          Decimal       @default(0) @db.Decimal(10, 2)
+  otherCharges    Decimal       @default(0) @db.Decimal(10, 2)
+  discount        Decimal       @default(0) @db.Decimal(10, 2)
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  paidAmount      Decimal       @default(0) @db.Decimal(10, 2)
+
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   PaymentMethod?
+
+  patient         Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment     Appointment?  @relation(fields: [appointmentId], references: [id])
+
+  payments        Payment[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([status])
+}
+
+// ==============================
+// PAYMENT
+// ==============================
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+  invoiceId     Int
+
+  amount        Decimal       @db.Decimal(10, 2)
+  method        PaymentMethod
+  transactionId String?
+  paymentDate  DateTime      @default(now())
+
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@index([invoiceId])
+}
