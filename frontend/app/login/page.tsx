@@ -15,16 +15,29 @@ const [loading, setLoading] = useState(false);
 
 async function handleSubmit(e: FormEvent<HTMLFormElement>) {
 e.preventDefault();
+
+
 setError("");
 setLoading(true);
 
-
 try {
-  const data = await api<any>("/auth/login", {
+  const data = await api<{
+    accessToken?: string;
+    user?: unknown;
+  }>("/auth/login", {
     method: "POST",
     auth: false,
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({
+      email: email.trim(),
+      password,
+    }),
   });
+
+  if (!data.accessToken) {
+    throw new Error(
+      "Login succeeded without an access token. Please check the backend login response."
+    );
+  }
 
   saveSession(data);
   router.replace("/dashboard");
@@ -32,18 +45,22 @@ try {
   setError(
     err instanceof Error
       ? err.message
-      : "Login failed. Please try again."
+      : "Login failed. Please check your credentials and try again."
   );
 } finally {
   setLoading(false);
 }
 
+
 }
 
 return ( <div className="login-page"> <div className="card login-card"> <div className="login-logo"> <div className="logo">MediCore</div>
-<div style={{ fontSize: 12, color: "#667085" }}>
-Hospital Management System </div> </div>
 
+
+      <div style={{ fontSize: 12, color: "#667085" }}>
+        Hospital Management System
+      </div>
+    </div>
 
     <h1>Welcome back</h1>
     <p>Sign in to your hospital dashboard.</p>
@@ -57,24 +74,28 @@ Hospital Management System </div> </div>
     <form onSubmit={handleSubmit}>
       <div className="field">
         <label htmlFor="email">Email</label>
+
         <input
           id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="username"
+          placeholder="Enter your email"
           required
         />
       </div>
 
       <div className="field">
         <label htmlFor="password">Password</label>
+
         <input
           id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
+          placeholder="Enter your password"
           required
         />
       </div>
@@ -96,7 +117,7 @@ Hospital Management System </div> </div>
         color: "#667085",
       }}
     >
-      Don't have an account?{" "}
+      Don&apos;t have an account?{" "}
       <Link
         href="/register"
         style={{
