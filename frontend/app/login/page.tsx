@@ -7,8 +7,7 @@ import { api, saveSession } from "../../lib/api";
 
 export default function LoginPage() {
 const router = useRouter();
-
-const [email, setEmail] = useState("[admin@medicore.com](mailto:admin@medicore.com)");
+const [email, setEmail] = useState("admin@medicore.com");
 const [password, setPassword] = useState("");
 const [error, setError] = useState("");
 const [loading, setLoading] = useState(false);
