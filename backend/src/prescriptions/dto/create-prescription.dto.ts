@@ -1,52 +1,56 @@
 import {
-  IsArray,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  ValidateNested,
+IsArray,
+IsInt,
+IsNotEmpty,
+IsOptional,
+IsString,
+ValidateNested,
 } from 'class-validator';
 
 import { Type } from 'class-transformer';
 
 export class PrescriptionItemDto {
-  @IsInt()
-  medicationId: number;
+@Type(() => Number)
+@IsInt()
+medicationId: number;
 
-  @IsString()
-  @IsNotEmpty()
-  dosage: string;
+@IsString()
+@IsNotEmpty()
+dosage: string;
 
-  @IsString()
-  @IsNotEmpty()
-  frequency: string;
+@IsString()
+@IsNotEmpty()
+frequency: string;
 
-  @IsString()
-  @IsNotEmpty()
-  duration: string;
+@IsString()
+@IsNotEmpty()
+duration: string;
 
-  @IsOptional()
-  @IsString()
-  instructions?: string;
+@IsOptional()
+@IsString()
+instructions?: string;
 }
 
 export class CreatePrescriptionDto {
-  @IsInt()
-  patientId: number;
+@Type(() => Number)
+@IsInt()
+patientId: number;
 
-  @IsInt()
-  doctorId: number;
+@Type(() => Number)
+@IsInt()
+doctorId: number;
 
-  @IsOptional()
-  @IsString()
-  diagnosis?: string;
+@IsOptional()
+@IsString()
+diagnosis?: string;
 
-  @IsOptional()
-  @IsString()
-  instructions?: string;
+@IsOptional()
+@IsString()
+instructions?: string;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PrescriptionItemDto)
-  items: PrescriptionItemDto[];
+@IsOptional()
+@IsArray()
+@ValidateNested({ each: true })
+@Type(() => PrescriptionItemDto)
+items?: PrescriptionItemDto[];
 }
